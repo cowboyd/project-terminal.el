@@ -4,7 +4,7 @@
 
 ;; Author: Charles Lowell
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "28.1") (project "0.6.0"))
+;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: terminals, projects, convenience
 ;; URL: https://github.com/cowboyd/project-terminal
 

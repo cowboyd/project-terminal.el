@@ -89,6 +89,23 @@
       (spy-on 'project-current :and-return-value nil)
       (expect (project-terminal-hide) :not :to-throw)))
 
+  (describe "shell creation"
+    (it "creates an eshell when showing with no existing shell"
+      (spy-on 'project-current :and-return-value nil)
+      (project-terminal-show)
+      (let ((buf (window-buffer (project-terminal--window))))
+        (expect (buffer-local-value 'major-mode buf)
+                :to-equal 'eshell-mode)))
+
+    (it "does not create a new shell if one already exists"
+      (spy-on 'project-current :and-return-value nil)
+      (project-terminal-show)
+      (let ((buf (window-buffer (project-terminal--window))))
+        (project-terminal-hide)
+        (project-terminal-show)
+        (expect (window-buffer (project-terminal--window))
+                :to-be buf))))
+
   (describe "project-terminal-toggle"
     (it "shows the drawer when hidden"
       (spy-on 'project-current :and-return-value nil)

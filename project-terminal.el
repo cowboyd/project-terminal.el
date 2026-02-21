@@ -31,6 +31,7 @@
 
 ;;; Code:
 
+(require 'eshell)
 (require 'project)
 
 (defgroup project-terminal nil
@@ -69,6 +70,7 @@ Returns the project root directory, or \"*global*\" when no project."
         buf
       (let ((buf (get-buffer-create (format "*project-terminal: %s*" key))))
         (with-current-buffer buf
+          (eshell-mode)
           (setq mode-line-format nil))
         (puthash key buf project-terminal--buffers)
         buf))))

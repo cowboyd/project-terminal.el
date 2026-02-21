@@ -32,7 +32,6 @@
 ;;; Code:
 
 (require 'seq)
-(require 'eshell)
 (require 'project)
 
 (defgroup project-terminal nil
@@ -43,6 +42,12 @@
 (defcustom project-terminal-height 0.25
   "Height of the terminal drawer as a fraction of frame height."
   :type 'float
+  :group 'project-terminal)
+
+(defcustom project-terminal-shell 'eshell
+  "Shell type to use for new terminal tabs."
+  :type '(choice (const :tag "Eshell" eshell)
+                 (const :tag "Vterm" vterm))
   :group 'project-terminal)
 
 (defcustom project-terminal-side 'bottom
@@ -81,13 +86,24 @@ Dead buffers are removed from the tab list."
       (plist-put state :active (car live)))
     state))
 
+(defun project-terminal--init-shell ()
+  "Initialize the current buffer with the configured shell type."
+  (pcase project-terminal-shell
+    ('eshell
+     (require 'eshell)
+     (eshell-mode))
+    ('vterm
+     (unless (require 'vterm nil t)
+       (user-error "vterm is not installed"))
+     (vterm-mode))))
+
 (defun project-terminal--make-tab (key)
   "Create an eshell buffer for project KEY and add it to the state."
   (let* ((state (gethash key project-terminal--projects))
          (tabs (and state (plist-get state :tabs)))
          (buf (generate-new-buffer (format "*project-terminal: %s*" key))))
     (with-current-buffer buf
-      (eshell-mode)
+      (project-terminal--init-shell)
       (setq mode-line-format nil)
       (tab-line-mode 1)
       (setq tab-line-format

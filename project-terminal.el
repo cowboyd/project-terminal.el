@@ -38,5 +38,80 @@
   :group 'project
   :prefix "project-terminal-")
 
+(defcustom project-terminal-height 0.25
+  "Height of the terminal drawer as a fraction of frame height."
+  :type 'float
+  :group 'project-terminal)
+
+(defcustom project-terminal-side 'bottom
+  "Which side of the frame to display the terminal drawer."
+  :type '(choice (const :tag "Bottom" bottom)
+                 (const :tag "Top" top)
+                 (const :tag "Left" left)
+                 (const :tag "Right" right))
+  :group 'project-terminal)
+
+(defvar project-terminal--buffers (make-hash-table :test 'equal)
+  "Map of project root strings to their terminal drawer buffers.")
+
+(defun project-terminal--key ()
+  "Return the project key for the current context.
+Returns the project root directory, or \"*global*\" when no project."
+  (if-let ((proj (project-current)))
+      (project-root proj)
+    "*global*"))
+
+(defun project-terminal--buffer ()
+  "Get or create the drawer buffer for the current project."
+  (let* ((key (project-terminal--key))
+         (buf (gethash key project-terminal--buffers)))
+    (if (and buf (buffer-live-p buf))
+        buf
+      (let ((buf (get-buffer-create (format "*project-terminal: %s*" key))))
+        (with-current-buffer buf
+          (setq mode-line-format nil))
+        (puthash key buf project-terminal--buffers)
+        buf))))
+
+(defun project-terminal--window ()
+  "Return the visible drawer window for the current project, or nil."
+  (let ((buf (gethash (project-terminal--key) project-terminal--buffers)))
+    (when (and buf (buffer-live-p buf))
+      (get-buffer-window buf))))
+
+(defun project-terminal--show (buf)
+  "Display BUF in a side window drawer."
+  (display-buffer-in-side-window buf
+    `((side . ,project-terminal-side)
+      (slot . 0)
+      (window-height . ,project-terminal-height)
+      (window-parameters
+       (no-delete-other-windows . t)))))
+
+;;;###autoload
+(defun project-terminal-show ()
+  "Show the terminal drawer for the current project.
+If no project is active, show the global drawer.
+No-op if the drawer is already visible."
+  (interactive)
+  (unless (project-terminal--window)
+    (project-terminal--show (project-terminal--buffer))))
+
+;;;###autoload
+(defun project-terminal-hide ()
+  "Hide the terminal drawer for the current project.
+No-op if the drawer is not visible."
+  (interactive)
+  (when-let ((win (project-terminal--window)))
+    (delete-window win)))
+
+;;;###autoload
+(defun project-terminal-toggle ()
+  "Toggle the terminal drawer for the current project."
+  (interactive)
+  (if (project-terminal--window)
+      (project-terminal-hide)
+    (project-terminal-show)))
+
 (provide 'project-terminal)
 ;;; project-terminal.el ends here

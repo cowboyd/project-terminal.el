@@ -31,6 +31,7 @@
 
 ;;; Code:
 
+(require 'seq)
 (require 'eshell)
 (require 'project)
 
@@ -52,8 +53,10 @@
                  (const :tag "Right" right))
   :group 'project-terminal)
 
-(defvar project-terminal--buffers (make-hash-table :test 'equal)
-  "Map of project root strings to their terminal drawer buffers.")
+(defvar project-terminal--projects (make-hash-table :test 'equal)
+  "Map of project keys to their terminal state.
+Each value is a plist (:tabs :active) where :tabs is a list of
+buffers and :active is the currently displayed buffer.")
 
 (defun project-terminal--key ()
   "Return the project key for the current context.
@@ -62,24 +65,96 @@ Returns the project root directory, or \"*global*\" when no project."
       (project-root proj)
     "*global*"))
 
-(defun project-terminal--buffer ()
-  "Get or create the drawer buffer for the current project."
+(defun project-terminal--state ()
+  "Get or create the terminal state for the current project.
+Returns a plist (:tabs :active), creating an initial eshell if needed.
+Dead buffers are removed from the tab list."
   (let* ((key (project-terminal--key))
-         (buf (gethash key project-terminal--buffers)))
-    (if (and buf (buffer-live-p buf))
-        buf
-      (let ((buf (get-buffer-create (format "*project-terminal: %s*" key))))
-        (with-current-buffer buf
-          (eshell-mode)
-          (setq mode-line-format nil))
-        (puthash key buf project-terminal--buffers)
-        buf))))
+         (state (or (gethash key project-terminal--projects)
+                    (let ((new (list :tabs nil :active nil)))
+                      (puthash key new project-terminal--projects)
+                      new)))
+         (live (or (seq-filter #'buffer-live-p (plist-get state :tabs))
+                   (list (project-terminal--make-tab key)))))
+    (plist-put state :tabs live)
+    (unless (memq (plist-get state :active) live)
+      (plist-put state :active (car live)))
+    state))
+
+(defun project-terminal--make-tab (key)
+  "Create an eshell buffer for project KEY and add it to the state."
+  (let* ((state (gethash key project-terminal--projects))
+         (tabs (and state (plist-get state :tabs)))
+         (n (1+ (length tabs)))
+         (bufname (format "*project-terminal<%d>: %s*" n key))
+         (buf (get-buffer-create bufname)))
+    (with-current-buffer buf
+      (eshell-mode)
+      (setq mode-line-format nil)
+      (tab-line-mode 1)
+      (setq tab-line-format
+            '((:eval (project-terminal--tab-line)))))
+    (when state
+      (plist-put state :tabs (append tabs (list buf))))
+    buf))
+
+(defvar project-terminal--add-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [tab-line mouse-1]
+                (lambda (&rest _)
+                  (interactive)
+                  (message "project-terminal: add terminal")))
+    map)
+  "Keymap for the add button in the tab line.")
+
+(defun project-terminal--tab-line ()
+  "Return the tab line for the terminal drawer."
+  (let* ((state (project-terminal--state))
+         (tabs (plist-get state :tabs))
+         (active (plist-get state :active)))
+    (append
+     (mapcar
+      (lambda (buf)
+        (let ((face (if (eq buf active)
+                        'tab-line-tab-current
+                      'tab-line-tab-inactive))
+              (map (make-sparse-keymap)))
+          (define-key map [tab-line mouse-1]
+                      (lambda (&rest _)
+                        (interactive)
+                        (project-terminal--select buf)))
+          (propertize (format " %d " (1+ (seq-position tabs buf)))
+                      'face face
+                      'keymap map)))
+      tabs)
+     (list (propertize " + "
+                       'face 'tab-line-tab
+                       'keymap project-terminal--add-map)))))
+
+(defun project-terminal--select (buf)
+  "Switch the drawer to display BUF."
+  (let* ((key (project-terminal--key))
+         (state (gethash key project-terminal--projects)))
+    (when state
+      (plist-put state :active buf)
+      (let ((win (project-terminal--window)))
+        (when win
+          (set-window-buffer win buf)
+          (select-window win)
+          (goto-char (point-max)))))))
+
+(defun project-terminal--active ()
+  "Return the active terminal buffer for the current project."
+  (plist-get (project-terminal--state) :active))
 
 (defun project-terminal--window ()
   "Return the visible drawer window for the current project, or nil."
-  (let ((buf (gethash (project-terminal--key) project-terminal--buffers)))
-    (when (and buf (buffer-live-p buf))
-      (get-buffer-window buf))))
+  (let* ((state (gethash (project-terminal--key) project-terminal--projects))
+         (tabs (and state (plist-get state :tabs))))
+    (seq-some (lambda (buf)
+               (when (buffer-live-p buf)
+                 (get-buffer-window buf)))
+             tabs)))
 
 (defun project-terminal--show (buf)
   "Display BUF in a side window drawer."
@@ -97,7 +172,7 @@ If no project is active, show the global drawer.
 No-op if the drawer is already visible."
   (interactive)
   (unless (project-terminal--window)
-    (let ((win (project-terminal--show (project-terminal--buffer))))
+    (let ((win (project-terminal--show (project-terminal--active))))
       (select-window win)
       (goto-char (point-max)))))
 

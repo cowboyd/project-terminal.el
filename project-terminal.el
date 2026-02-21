@@ -97,7 +97,9 @@ If no project is active, show the global drawer.
 No-op if the drawer is already visible."
   (interactive)
   (unless (project-terminal--window)
-    (project-terminal--show (project-terminal--buffer))))
+    (let ((win (project-terminal--show (project-terminal--buffer))))
+      (select-window win)
+      (goto-char (point-max)))))
 
 ;;;###autoload
 (defun project-terminal-hide ()

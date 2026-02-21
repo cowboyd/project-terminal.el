@@ -94,7 +94,7 @@ Dead buffers are removed from the tab list."
      (eshell-mode))
     ('vterm
      (unless (require 'vterm nil t)
-       (user-error "vterm is not installed"))
+       (user-error "Vterm is not installed"))
      (vterm-mode))))
 
 (defun project-terminal--make-tab (key)

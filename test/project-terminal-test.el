@@ -157,6 +157,38 @@
         (project-terminal--select buf2)
         (expect (window-buffer (project-terminal--window))
                 :to-be buf2)
-        (expect (plist-get state :active) :to-be buf2)))))
+        (expect (plist-get state :active) :to-be buf2))))
+
+  (describe "project-terminal-add"
+    (it "creates a new tab and switches to it"
+      (spy-on 'project-current :and-return-value nil)
+      (project-terminal-show)
+      (let ((first (window-buffer (project-terminal--window))))
+        (project-terminal-add)
+        (let* ((state (project-terminal--state))
+               (tabs (plist-get state :tabs)))
+          (expect (length tabs) :to-equal 2)
+          (expect (plist-get state :active) :not :to-be first)
+          (expect (window-buffer (project-terminal--window))
+                  :to-be (plist-get state :active)))))
+
+    (it "creates only one tab when no shells exist"
+      (spy-on 'project-current :and-return-value nil)
+      (project-terminal-add)
+      (let ((tabs (plist-get (project-terminal--state) :tabs)))
+        (expect (length tabs) :to-equal 1)))
+
+    (it "opens the drawer if not already visible"
+      (spy-on 'project-current :and-return-value nil)
+      (project-terminal-add)
+      (expect (project-terminal--window) :not :to-be nil))
+
+    (it "creates an eshell buffer"
+      (spy-on 'project-current :and-return-value nil)
+      (project-terminal-show)
+      (project-terminal-add)
+      (let ((buf (window-buffer (project-terminal--window))))
+        (expect (buffer-local-value 'major-mode buf)
+                :to-equal 'eshell-mode)))))
 
 ;;; project-terminal-test.el ends here

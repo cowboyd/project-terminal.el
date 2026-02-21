@@ -85,9 +85,7 @@ Dead buffers are removed from the tab list."
   "Create an eshell buffer for project KEY and add it to the state."
   (let* ((state (gethash key project-terminal--projects))
          (tabs (and state (plist-get state :tabs)))
-         (n (1+ (length tabs)))
-         (bufname (format "*project-terminal<%d>: %s*" n key))
-         (buf (get-buffer-create bufname)))
+         (buf (generate-new-buffer (format "*project-terminal: %s*" key))))
     (with-current-buffer buf
       (eshell-mode)
       (setq mode-line-format nil)
@@ -98,12 +96,29 @@ Dead buffers are removed from the tab list."
       (plist-put state :tabs (append tabs (list buf))))
     buf))
 
+;;;###autoload
+(defun project-terminal-add ()
+  "Create a new terminal tab for the current project and switch to it."
+  (interactive)
+  (let* ((key (project-terminal--key))
+         (state (or (gethash key project-terminal--projects)
+                    (let ((new (list :tabs nil :active nil)))
+                      (puthash key new project-terminal--projects)
+                      new)))
+         (buf (project-terminal--make-tab key))
+         (win (or (project-terminal--window)
+                  (project-terminal--show buf))))
+    (plist-put state :active buf)
+    (set-window-buffer win buf)
+    (select-window win)
+    (goto-char (point-max))))
+
 (defvar project-terminal--add-map
   (let ((map (make-sparse-keymap)))
     (define-key map [tab-line mouse-1]
                 (lambda (&rest _)
                   (interactive)
-                  (message "project-terminal: add terminal")))
+                  (project-terminal-add)))
     map)
   "Keymap for the add button in the tab line.")
 

@@ -95,7 +95,11 @@ Dead buffers are removed from the tab list."
     ('vterm
      (unless (require 'vterm nil t)
        (user-error "Vterm is not installed"))
-     (vterm-mode))))
+     (vterm-mode))
+    (_
+     (message "Unknown shell type `%s', falling back to eshell" project-terminal-shell)
+     (require 'eshell)
+     (eshell-mode))))
 
 (defun project-terminal--make-tab (key)
   "Create an eshell buffer for project KEY and add it to the state."

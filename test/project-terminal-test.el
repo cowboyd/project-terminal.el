@@ -10,6 +10,14 @@
 (require 'project-terminal)
 
 (describe "project-terminal"
+  (after-each
+    (when-let ((win (project-terminal--window)))
+      (delete-window win))
+    (clrhash project-terminal--buffers)
+    (dolist (b (buffer-list))
+      (when (string-prefix-p "*project-terminal:" (buffer-name b))
+        (kill-buffer b))))
+
   (it "loads successfully"
     (expect (featurep 'project-terminal) :to-be-truthy))
 
@@ -24,12 +32,6 @@
       (expect (project-terminal--key) :to-equal "*global*")))
 
   (describe "project-terminal--buffer"
-    (after-each
-      (clrhash project-terminal--buffers)
-      (dolist (b (buffer-list))
-        (when (string-prefix-p "*project-terminal:" (buffer-name b))
-          (kill-buffer b))))
-
     (it "creates a buffer named after the project"
       (spy-on 'project-current :and-return-value nil)
       (let ((buf (project-terminal--buffer)))
@@ -56,14 +58,6 @@
         (expect (buffer-name buf) :to-equal "*project-terminal: /fake/*"))))
 
   (describe "project-terminal-show"
-    (after-each
-      (when-let ((win (project-terminal--window)))
-        (delete-window win))
-      (clrhash project-terminal--buffers)
-      (dolist (b (buffer-list))
-        (when (string-prefix-p "*project-terminal:" (buffer-name b))
-          (kill-buffer b))))
-
     (it "opens a side window"
       (spy-on 'project-current :and-return-value nil)
       (project-terminal-show)
@@ -77,14 +71,6 @@
         (expect (project-terminal--window) :to-be win))))
 
   (describe "project-terminal-hide"
-    (after-each
-      (when-let ((win (project-terminal--window)))
-        (delete-window win))
-      (clrhash project-terminal--buffers)
-      (dolist (b (buffer-list))
-        (when (string-prefix-p "*project-terminal:" (buffer-name b))
-          (kill-buffer b))))
-
     (it "closes the drawer window"
       (spy-on 'project-current :and-return-value nil)
       (project-terminal-show)
@@ -104,14 +90,6 @@
       (expect (project-terminal-hide) :not :to-throw)))
 
   (describe "project-terminal-toggle"
-    (after-each
-      (when-let ((win (project-terminal--window)))
-        (delete-window win))
-      (clrhash project-terminal--buffers)
-      (dolist (b (buffer-list))
-        (when (string-prefix-p "*project-terminal:" (buffer-name b))
-          (kill-buffer b))))
-
     (it "shows the drawer when hidden"
       (spy-on 'project-current :and-return-value nil)
       (project-terminal-toggle)

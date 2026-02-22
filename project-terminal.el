@@ -6,7 +6,7 @@
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: terminals, projects, convenience
-;; URL: https://github.com/cowboyd/project-terminal
+;; URL: https://github.com/cowboyd/project-terminal.el
 
 ;; This file is NOT part of GNU Emacs.
 

@@ -2,7 +2,8 @@
 
 ;; Copyright (C) 2025 Charles Lowell
 
-;; Author: Charles Lowell
+;; Author: Charles Lowell <cowboyd@frontside.com>
+
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: terminals, projects, convenience

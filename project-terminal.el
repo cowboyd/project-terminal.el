@@ -93,9 +93,9 @@ Dead buffers are removed from the tab list."
      (require 'eshell)
      (eshell-mode))
     ('vterm
-     (unless (require 'vterm nil t)
-       (user-error "Vterm is not installed"))
-     (vterm-mode))
+     (if (fboundp 'vterm-mode)
+         (vterm-mode)
+       (user-error "'vterm selected as project-terminal shell, but it is not installed")))
     (_
      (message "Unknown shell type `%s', falling back to eshell" project-terminal-shell)
      (require 'eshell)

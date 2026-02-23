@@ -159,6 +159,22 @@
                 :to-be buf2)
         (expect (plist-get state :active) :to-be buf2))))
 
+  (describe "default-directory"
+    (it "starts in the project root when in a project"
+      (spy-on 'project-current :and-return-value '(vc Git "/fake/project/"))
+      (spy-on 'project-root :and-return-value "/fake/project/")
+      (let ((state (project-terminal--state)))
+        (expect (buffer-local-value 'default-directory
+                                    (car (plist-get state :tabs)))
+                :to-equal "/fake/project/")))
+
+    (it "starts in home directory when no project is active"
+      (spy-on 'project-current :and-return-value nil)
+      (let ((state (project-terminal--state)))
+        (expect (buffer-local-value 'default-directory
+                                    (car (plist-get state :tabs)))
+                :to-equal (expand-file-name "~/")))))
+
   (describe "project-terminal-add"
     (it "creates a new tab and switches to it"
       (spy-on 'project-current :and-return-value nil)

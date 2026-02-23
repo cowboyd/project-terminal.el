@@ -106,9 +106,13 @@ Dead buffers are removed from the tab list."
   "Create an eshell buffer for project KEY and add it to the state."
   (let* ((state (gethash key project-terminal--projects))
          (tabs (and state (plist-get state :tabs)))
+         (dir (or (when-let ((proj (project-current)))
+                    (project-root proj))
+                  (expand-file-name "~/")))
          (buf (generate-new-buffer (format "*project-terminal: %s*" key))))
     (with-current-buffer buf
       (project-terminal--init-shell)
+      (setq default-directory dir)
       (setq mode-line-format nil)
       (tab-line-mode 1)
       (setq tab-line-format

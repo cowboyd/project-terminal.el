@@ -180,8 +180,7 @@ Dead buffers are removed from the tab list."
       (let ((win (project-terminal--window)))
         (when win
           (set-window-buffer win buf)
-          (select-window win)
-          (goto-char (point-max)))))))
+          (select-window win))))))
 
 (defun project-terminal--active ()
   "Return the active terminal buffer for the current project."
@@ -213,8 +212,7 @@ No-op if the drawer is already visible."
   (interactive)
   (unless (project-terminal--window)
     (let ((win (project-terminal--show (project-terminal--active))))
-      (select-window win)
-      (goto-char (point-max)))))
+      (select-window win))))
 
 ;;;###autoload
 (defun project-terminal-hide ()
